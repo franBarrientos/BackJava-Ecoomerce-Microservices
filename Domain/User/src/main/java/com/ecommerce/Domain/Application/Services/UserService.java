@@ -27,9 +27,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.time.Duration;
 
 import java.util.Optional;
 
@@ -41,7 +39,7 @@ public class UserService {
     private final UserDtoMapper userDtoMapper;
     private final WebClient.Builder webClientBuilder;
 
-    HttpClient client = HttpClient.create()
+  /*  HttpClient client = HttpClient.create()
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
             .option(ChannelOption.SO_KEEPALIVE, true)
             .option(NioChannelOption.of(ExtendedSocketOptions.TCP_KEEPIDLE), 300)
@@ -50,10 +48,10 @@ public class UserService {
             .doOnConnected(connection -> {
                 connection.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS));
                 connection.addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS));
-            });
+            });*/
 
 
-    private CustomerDTO getCustomerDTO(Long userId){
+ /*   private CustomerDTO getCustomerDTO(Long userId){
 
         WebClient webClient = this.webClientBuilder.clientConnector(new ReactorClientHttpConnector(client))
                 .baseUrl("http://localhost:8083/api/v1/customers/user")
@@ -67,26 +65,20 @@ public class UserService {
 
 
         return new ObjectMapper().convertValue(block1.get("body"), CustomerDTO.class);
-    }
+    }*/
 
 
     public Page<UserDTO> getAllUsers(Pageable pageable) {
         return this.userRepository
                 .findAll(pageable)
-                .map(userDtoMapper::toDto)
-                .map(c-> {
-                    c.setCustomer(this.getCustomerDTO(c.getId()));
-                    return c;
-                });
+                .map(userDtoMapper::toDto);
     }
 
     public UserDTO getUserIsActive(Long id) {
-         UserDTO user = this.userDtoMapper
+        return this.userDtoMapper
                 .toDto(this.userRepository
-                .findUserIsActive(id)
-                .orElseThrow(() -> new NotFoundException("user " + id + " not found")));
-         user.setCustomer(this.getCustomerDTO(user.getId()));
-        return user;
+                        .findUserIsActive(id)
+                        .orElseThrow(() -> new NotFoundException("user " + id + " not found")));
     }
 
     public String deleteById(Long id) {
@@ -102,10 +94,10 @@ public class UserService {
         Optional<User> userUpdated = this.userRepository
                 .updateById(id, this.userDtoMapper.toDomain(body));
 
-        if (userUpdated.isEmpty()){
+        if (userUpdated.isEmpty()) {
             throw new NotFoundException("user " + id + " not found");
 
-        }else {
+        } else {
             return this.userDtoMapper
                     .toDto(userUpdated.get());
         }
