@@ -6,12 +6,18 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/Domain/User/pom.xml" />
+        <option value="$PROJECT_DIR$/demo/pom.xml" />
+        <option value="$PROJECT_DIR$/Infrastructure/Eureka/pom.xml" />
+        <option value="$PROJECT_DIR$/Infrastructure/AdminServer/pom.xml" />
+        <option value="$PROJECT_DIR$/Infrastructure/ConfigServer/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
       <set>
         <option value="$PROJECT_DIR$/Domain/Product/untitled/pom.xml" />
         <option value="$PROJECT_DIR$/Domain/untitled/pom.xml" />
+        <option value="$PROJECT_DIR$/Infrastructure/Registry/pom.xml" />
+        <option value="$PROJECT_DIR$/demo/pom.xml" />
       </set>
     </option>
   </component>

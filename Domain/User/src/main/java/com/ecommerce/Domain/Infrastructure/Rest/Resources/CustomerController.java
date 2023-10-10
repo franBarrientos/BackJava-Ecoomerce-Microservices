@@ -38,11 +38,15 @@ public class CustomerController {
         );
     }
 
-    @GetMapping("/{id}")
+/*
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<ApiResponse> getById(@PathVariable(value = "id") long id, Authentication authentication) {
+*/
+@GetMapping("/{id}")
+public ResponseEntity<ApiResponse> getById(@PathVariable(value = "id") long id/*, Authentication authentication*/) {
         // if isn't admin and doesn't have the same id throw 403
+/*
         AuthService.checkIfAdminOrSameUser(id, authentication);
+*/
         return ApiResponse.oK(this.customerService.getById(id));
     }
 
