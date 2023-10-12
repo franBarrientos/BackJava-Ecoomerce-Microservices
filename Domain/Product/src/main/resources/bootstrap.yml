@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: products
+
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-server
+      profile: ${CONFIG_PROFILE:dev}
+      fail-fast: true
+      username: fran
+      password: franco19
+    retry:
+      maxAttempts: 20
+      initialInterval: 1000
+
+
+server:
+  port: 8080
+
+eureka:
+  instance:
+    metadataMap:
+      user: fran
+      password: franco19
+      configPath: /config-server
+  client:
+    webclient:
+      enabled: true
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}

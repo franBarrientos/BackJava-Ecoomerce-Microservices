@@ -32,7 +32,6 @@ public class WebfluxProductClient implements ProductClient {
         WebClient webClient = this.webClientBuilder.clientConnector(new ReactorClientHttpConnector(this.client))
                 .baseUrl("http://"+this.getUrlProducts()+"/api/v1/products")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjb3JyZW8xQGNvcnJlby5jb20iLCJpYXQiOjE2OTY5MDYzMzksImV4cCI6MTY5Njk5MjczOX0.XsveBiMYBIl_3ZM9d-oIYEGf19piKkGZs6gvAfh02Vw")
                 .defaultUriVariables(Collections.singletonMap("url", "http://"+this.getUrlProducts()+"/api/v1/products"))
                 .build();
 

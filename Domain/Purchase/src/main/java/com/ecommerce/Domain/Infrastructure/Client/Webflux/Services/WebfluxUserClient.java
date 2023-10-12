@@ -30,7 +30,6 @@ public class WebfluxUserClient implements UserClient {
         WebClient webClient = this.webClientBuilder.clientConnector(new ReactorClientHttpConnector(this.client))
                 .baseUrl("http://"+this.getUrlUser()+"/api/v1/customers")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjb3JyZW8xQGNvcnJlby5jb20iLCJpYXQiOjE2OTY5MDYzMzksImV4cCI6MTY5Njk5MjczOX0.XsveBiMYBIl_3ZM9d-oIYEGf19piKkGZs6gvAfh02Vw")
                 .defaultUriVariables(Collections.singletonMap("url", "http://"+this.getUrlUser()+"/api/v1/customers"))
                 .build();
 

@@ -13,11 +13,13 @@ import com.ecommerce.Domain.Infrastructure.DB.Spring.Repositories.PurchaseProduc
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -38,7 +40,10 @@ public class PurchaseService {
     private String urlBack;
 
     public Page<PurchaseDTO> getAllPurchases(Pageable pageable) {
-        return this.purchaseRepository.findAll(pageable)
+        Page<Purchase> purchasesPage = this.purchaseRepository.findAll(pageable);
+
+        List<PurchaseDTO> purchaseDTOs = purchasesPage.get()
+                .parallel()
                 .map(p -> {
                     PurchaseDTO purchaseDTO = this.purchaseDtoMapper.toDto(p);
                     purchaseDTO.setCustomer(this.userClient.getCustomerDTO(p.getCustomerId()));
@@ -53,29 +58,46 @@ public class PurchaseService {
                                     .build())
                             .collect(Collectors.toList()));
                     return purchaseDTO;
-                });
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(purchaseDTOs, pageable, purchasesPage.getTotalElements());
     }
+
 
     public PurchaseDTO getById(Long id) {
         Purchase purchaseDomain = this.purchaseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("purchase " + id + " not found"));
 
+        CompletableFuture<CustomerDTO> customerFuture = CompletableFuture.supplyAsync(() -> this.userClient.getCustomerDTO(purchaseDomain.getCustomerId()));
+
+        CompletableFuture<List<PurchaseProductDTO>> purchaseProductsFuture = CompletableFuture.supplyAsync(() ->
+                purchaseDomain.getPurchaseProducts()
+                        .stream()
+                        .map(pp -> PurchaseProductDTO.builder()
+                                .id(pp.getId())
+                                .purchase(this.purchaseDtoMapper.toDto(pp.getPurchase()))
+                                .quantity(pp.getQuantity())
+                                .totalPrice(pp.getTotalPrice())
+                                .product(this.productClient.getProductDTO(pp.getProductId()))
+                                .build())
+                        .collect(Collectors.toList()));
+
         PurchaseDTO purchaseDTO = this.purchaseDtoMapper.toDto(purchaseDomain);
 
-        purchaseDTO.setCustomer(this.userClient.getCustomerDTO(purchaseDomain.getCustomerId()));
-        purchaseDTO.setPurchaseProducts(purchaseDomain.getPurchaseProducts()
-                .stream()
-                .map(pp -> PurchaseProductDTO.builder()
-                        .id(pp.getId())
-                        .purchase(this.purchaseDtoMapper.toDto(pp.getPurchase()))
-                        .quantity(pp.getQuantity())
-                        .totalPrice(pp.getTotalPrice())
-                        .product(this.productClient.getProductDTO(pp.getProductId()))
-                        .build())
-                .collect(Collectors.toList()));
 
+        CompletableFuture<Void> combinedFuture = customerFuture.thenCombine(purchaseProductsFuture, (customer, pps) -> {
+            purchaseDTO.setCustomer(customer);
+            purchaseDTO.setPurchaseProducts(pps);
+            return null;
+        });
+        combinedFuture.join();
         return purchaseDTO;
     }
+
+
+
+
 
   /*  public Page<PurchaseDTO> search(Integer dni, String firstName, String lastName, Pageable pageable) {
         return this.purchaseRepository.search(dni, firstName, lastName, pageable)

@@ -21,6 +21,7 @@
         <spring-boot.version>3.1.2</spring-boot.version>
         <spring-boot-admin.version>3.1.5</spring-boot-admin.version>
         <spring-cloud-dependencies.version>2022.0.4</spring-cloud-dependencies.version>
+        <dockerfile-maven-version>1.4.13</dockerfile-maven-version>
     </properties>
 
     <dependencyManagement>
@@ -105,8 +106,40 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>${dockerfile-maven-version}</version>
+                <executions>
+                    <execution>
+                        <id>build-docker-image</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repository>ecommerce/microservice-docker-${project.artifactId}</repository>
+                    <tag>${project.version}</tag>
+                    <buildArgs>
+                        <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                    </buildArgs>
+                </configuration>
             </plugin>
 
         </plugins>
+
+
+
     </build>
 </project>
