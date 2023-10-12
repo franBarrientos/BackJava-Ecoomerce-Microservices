@@ -65,6 +65,7 @@ public class PurchaseService {
     }
 
 
+
     public PurchaseDTO getById(Long id) {
         Purchase purchaseDomain = this.purchaseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("purchase " + id + " not found"));
