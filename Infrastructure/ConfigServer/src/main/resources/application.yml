@@ -1,0 +1,20 @@
+server.port: 8888
+spring:
+  application.name: config-server
+  cloud.config:
+    server.git:
+      uri: ${LOCAL_REPOSITORY:C:\\\\Users\\\\Usuario\\\\Desktop\\\\Ecommerce-Microservices-Spring\\\\Enviroments}
+      default-label: master
+      clone-on-start: true
+  security:
+    user:
+      name: fran
+      password: franco19
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+    registryFetchIntervalSeconds: 1
+  instance:
+    leaseRenewalIntervalInSeconds: 1
