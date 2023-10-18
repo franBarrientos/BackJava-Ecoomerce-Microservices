@@ -6,10 +6,7 @@ import com.ecommerce.Domain.Application.Services.AuthService;
 import com.ecommerce.Domain.Infrastructure.Rest.Config.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -21,7 +18,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@RequestBody RegisterRequest body) {
-        return ApiResponse.oK(authService.register(body));
+        return ApiResponse.create(authService.register(body));
     }
 
     @PostMapping("/login")
@@ -29,9 +26,14 @@ public class AuthController {
         return ApiResponse.oK(authService.login(body));
 
     }
+
     @PostMapping("/google")
     public ResponseEntity<ApiResponse> loginGoogle(@RequestBody Map body) {
         return ApiResponse.oK(authService.loginGoogle(body));
-
     }
+    @GetMapping("/roles")
+    public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(authService.getRoles(token));
+    }
+
 }

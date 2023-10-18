@@ -28,8 +28,24 @@ services:
          #-Dspring.cloud.config.server.native.searchLocations=/var/config-data
     depends_on:
       - registry-discovery
+
+
+ ##########################################################################
+ #api-gateway service
+ ##########################################################################
+  api-gateway:
+    container_name: id-gateway
+    image: ecommerce/microservice-docker-apigateway:1.0-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+         -Xms256M
+         -Xmx256M
+         -Dspring.cloud.config.enabled=false
+         -DEUREKA_SERVER=http://registry-discovery:8761/eureka/
+    depends_on:
+      - registry-discovery
     ports:
-      - 8888:8888
+      - 8085:8085
 
  ##########################################################################
  #administration service
@@ -67,8 +83,6 @@ services:
     depends_on:
       - registry-discovery
       - configuration
-    ports:
-      - 8080:8080
 
  ##########################################################################
  #user service
@@ -87,8 +101,6 @@ services:
     depends_on:
       - registry-discovery
       - configuration
-    ports:
-      - 8081:8081
 
  ##########################################################################
  #purchases service
@@ -107,42 +119,40 @@ services:
     depends_on:
       - registry-discovery
       - configuration
-    ports:
-      - 8082:8082
 
  ##########################################################################
  #database service
  ##########################################################################
-  postgres_db:
-    container_name: postgres
-    image: postgres:latest
-    ports:
-        - 3432:5432
-    volumes:
-        #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
-        - ./dbfiles:/docker-entrypoint-initdb.d
-        - /var/lib/postgres_data:/var/lib/postgresql/data
-    environment:
-        #default postgres super user
-        POSTGRES_USER: postgres
-         #default passwor for postgres super user, it is only the required envvar for postgres image
-        POSTGRES_PASSWORD: qwerty
-        #main database if name is not specific thname of super user is use
-        POSTGRES_DB: postgres
-
- ##########################################################################
- #pgadmin service
- ##########################################################################
-  pgadmin4:
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
-      PGADMIN_DEFAULT_PASSWORD: "qwerty"
-    ports:
-      - 80:80
-    depends_on:
-      - postgres_db
-
-
+  # postgres_db:
+  #   container_name: postgres
+  #   image: postgres:latest
+  #   ports:
+  #       - 3432:5432
+  #   volumes:
+  #       #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
+  #       - ./dbfiles:/docker-entrypoint-initdb.d
+  #       - /var/lib/postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #       #default postgres super user
+  #       POSTGRES_USER: postgres
+  #        #default passwor for postgres super user, it is only the required envvar for postgres image
+  #       POSTGRES_PASSWORD: qwerty
+  #       #main database if name is not specific thname of super user is use
+  #       POSTGRES_DB: postgres
+ #
+  ###########################################################################
+  ##pgadmin service
+  ###########################################################################
+  # pgadmin4:
+  #   image: dpage/pgadmin4
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+  #     PGADMIN_DEFAULT_PASSWORD: "qwerty"
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - postgres_db
+ #
+ #
 

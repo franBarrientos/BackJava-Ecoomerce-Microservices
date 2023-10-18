@@ -32,7 +32,7 @@ public class PurchaseEntity {
 
     private Date updatedAt;
 
-    @OneToMany(mappedBy = "purchase", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "purchase", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<PurchaseProductEntity> purchaseProducts;
 
     @PrePersist

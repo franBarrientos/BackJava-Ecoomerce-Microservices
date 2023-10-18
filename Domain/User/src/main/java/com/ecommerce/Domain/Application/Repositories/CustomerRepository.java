@@ -4,6 +4,8 @@ import com.ecommerce.Domain.Domain.Customer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface CustomerRepository {
@@ -20,4 +22,5 @@ public interface CustomerRepository {
     Optional<Customer> findByUserId (Long id);
 
 
+    List<Customer> searchCustomers(Integer dni, String firstName, String lastName);
 }

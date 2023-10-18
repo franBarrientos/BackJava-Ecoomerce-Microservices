@@ -4,6 +4,7 @@ import com.ecommerce.Domain.Application.Client.ProductClient;
 import com.ecommerce.Domain.Application.Client.UserClient;
 import com.ecommerce.Domain.Application.Dtos.ProductDTO;
 import com.ecommerce.Domain.Application.Dtos.PurchaseAddDTO;
+import com.ecommerce.Domain.Application.Dtos.PurchaseProductAddDTO;
 import com.ecommerce.Domain.Application.Exceptions.NotFoundException;
 import com.ecommerce.Domain.Domain.Purchase;
 import com.ecommerce.Domain.Domain.PurchaseProduct;
@@ -20,61 +21,45 @@ public class PurchaseAddDtoMapper {
 
     public Purchase purchaseAddDTOtoDomain(PurchaseAddDTO purchaseAddDTO) {
 
-
-
-
         return Purchase.builder()
                 .payment(purchaseAddDTO.getPayment())
                 .customerId(purchaseAddDTO.getCustomerId())
                 .purchaseProducts(purchaseAddDTO
                         .getPurchaseProducts()
                         .stream()
-                        .map(p -> {
-                            ProductDTO productDto = this.productClient.getProductDTO(p.getProductId());
-
-                            if(productDto == null) throw new NotFoundException("Product " + p.getProductId() + " not found");
-
-                            return PurchaseProduct.builder()
-                                    .productId(p.getProductId())
-                                    .quantity(p.getQuantity())
-                                    .totalPrice(productDto.getPrice().multiply(BigDecimal.valueOf(p.getQuantity())))
-                                    .build();
-                        }).collect(Collectors.toList()))
+                        .map(this::purchaseProductAddDTOtoDomain)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
-  /*  public Purchase purchaseAddDTOtoDomainWithPurchaseOptional(PurchaseAddDTO purchaseAddDTO) {
+    public Purchase purchaseAddDTOtoDomainWithPurchaseOptional(PurchaseAddDTO purchaseAddDTO) {
         return Purchase.builder()
                 .payment(purchaseAddDTO.getPayment() != null ? purchaseAddDTO.getPayment()
                         : null)
-                .customer(
-                        purchaseAddDTO.getCustomerId() != null ?
-                                (this.customerRepository
-                                        .findById(purchaseAddDTO.getCustomerId())
-                                        .orElseThrow(() -> new NotFoundException("customer "
-                                                + purchaseAddDTO.getCustomerId() +
-                                                " not found")))
-                                : null)
+
                 .purchaseProducts(
                         purchaseAddDTO.getPurchaseProducts() != null ?
                                 purchaseAddDTO
                                         .getPurchaseProducts()
                                         .stream()
-                                        .map(p -> {
-                                            Product product = this.productRepository
-                                                    .findByIdAndHasStockIsTrue(p.getProductId())
-                                                    .orElseThrow(() -> new NotFoundException("Product " +
-                                                            p.getProductId() + " not found"));
-
-                                            return PurchaseProduct.builder()
-                                                    .product(product)
-                                                    .quantity(p.getQuantity())
-                                                    .totalPrice(product.getPrice()
-                                                            .multiply(BigDecimal.valueOf(p.getQuantity())))
-                                                    .build();
-                                        }).collect(Collectors.toList())
+                                        .map(this::purchaseProductAddDTOtoDomain)
+                                        .collect(Collectors.toList())
                                 : null)
                 .build();
-    }*/
+    }
+
+    public PurchaseProduct purchaseProductAddDTOtoDomain(PurchaseProductAddDTO purchaseProductAddDTO) {
+
+        ProductDTO productDto = this.productClient.getProductDTO(purchaseProductAddDTO.getProductId());
+
+        if(productDto == null) throw new NotFoundException("Product " + purchaseProductAddDTO.getProductId() + " not found");
+
+        return PurchaseProduct.builder()
+                .productId(purchaseProductAddDTO.getProductId())
+                .quantity(purchaseProductAddDTO.getQuantity())
+                .totalPrice(productDto.getPrice().multiply(BigDecimal.valueOf(purchaseProductAddDTO.getQuantity())))
+                .build();
+    }
+
 
 }

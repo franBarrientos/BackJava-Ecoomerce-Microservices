@@ -11,9 +11,9 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor
-public class SalesStadistics {
+public class SalesStatistics {
 
-    private List<StadisticsProducts> stadisticsProducts;
-    private List<StadisticsCategory> stadisticsCategories;
-    private List<StadisticsLast10days> stadisticsLast10days;
+    private List<StatisticsProducts> stadisticsProducts;
+    private List<StatisticsCategory> stadisticsCategories;
+    private List<SalesStatisticsLastdays> salesStatisticsLastdays;
 }

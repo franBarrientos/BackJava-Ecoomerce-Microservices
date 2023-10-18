@@ -13,6 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
@@ -47,6 +50,13 @@ public class CustomerService {
                 (this.customerRepository.save(this.customerDtoMapper.toDomain(customer)));
     }
 
+    public boolean isOwnOfTheResource(Long resourceId, Long userId){
+        Customer customer = this.customerRepository.findActiveCustomer(resourceId)
+                .orElseThrow(() -> new NotFoundException(" customer " + resourceId + " not found"));
+
+        return customer.getUser().getId().equals(userId);
+    }
+
     public CustomerDTO updateById(Long id, CustomerDTO customer){
         Customer customerToUpdate = this.customerRepository.findActiveCustomer(id)
                 .orElseThrow(() -> new NotFoundException("customer " + id + " not found "));
@@ -76,5 +86,13 @@ public class CustomerService {
                 (this.customerRepository
                         .findByUserId(id)
                         .orElse(null));
+    }
+
+    public List<CustomerDTO> searchCustomers(Integer dni, String firstName, String lastName) {
+        return this.customerRepository
+                .searchCustomers(dni, firstName, lastName)
+                .stream()
+                .map(this.customerDtoMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

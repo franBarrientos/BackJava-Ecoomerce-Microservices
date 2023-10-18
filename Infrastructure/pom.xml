@@ -16,12 +16,16 @@
         <module>Eureka</module>
         <module>AdminServer</module>
         <module>ConfigServer</module>
+        <module>ApiGateway</module>
     </modules>
 
     <dependencies> <dependency>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-    </dependency></dependencies>
+    </dependency>
+
+
+    </dependencies>
 
     <artifactId>Infrastructure</artifactId>
     <packaging>pom</packaging>

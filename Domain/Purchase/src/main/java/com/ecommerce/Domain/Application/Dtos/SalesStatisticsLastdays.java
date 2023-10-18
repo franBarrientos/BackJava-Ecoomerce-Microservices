@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 @Data
 @AllArgsConstructor
-public class StadisticsLast10days {
+public class SalesStatisticsLastdays {
     private Date date;
     private BigDecimal totalSales;
 }

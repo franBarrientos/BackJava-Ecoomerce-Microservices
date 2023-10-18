@@ -9,7 +9,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +50,14 @@ public class CustomerDboRepository implements CustomerRepository {
                         this.customerEntityMapper.toDomain(customerEntity.get()))
                 :
             Optional.empty();
+    }
+
+    @Override
+    public List<Customer> searchCustomers(Integer dni, String firstName, String lastName) {
+        return this.customerRepository
+                .searchCustomers(dni, firstName, lastName)
+                .stream().map(this.customerEntityMapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -9,7 +9,16 @@ import com.ecommerce.Domain.Application.Mappers.PurchaseDtoMapper;
 import com.ecommerce.Domain.Application.Repositories.PurchaseRepository;
 import com.ecommerce.Domain.Domain.Purchase;
 import com.ecommerce.Domain.Domain.PurchaseProduct;
-import com.ecommerce.Domain.Infrastructure.DB.Spring.Repositories.PurchaseProductDboRepository;
+import com.mercadopago.MercadoPagoConfig;
+import com.mercadopago.client.payment.PaymentClient;
+import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
+import com.mercadopago.client.preference.PreferenceClient;
+import com.mercadopago.client.preference.PreferenceItemRequest;
+import com.mercadopago.client.preference.PreferenceRequest;
+import com.mercadopago.exceptions.MPApiException;
+import com.mercadopago.exceptions.MPException;
+import com.mercadopago.resources.payment.Payment;
+import com.mercadopago.resources.preference.Preference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -18,15 +27,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class PurchaseService {
     private final PurchaseRepository purchaseRepository;
-    private final PurchaseProductDboRepository purchaseProductRepository;
     private final PurchaseDtoMapper purchaseDtoMapper;
     private final PurchaseAddDtoMapper purchaseAddDtoMapper;
     private final ProductClient productClient;
@@ -42,23 +53,10 @@ public class PurchaseService {
     public Page<PurchaseDTO> getAllPurchases(Pageable pageable) {
         Page<Purchase> purchasesPage = this.purchaseRepository.findAll(pageable);
 
-        List<PurchaseDTO> purchaseDTOs = purchasesPage.get()
+        List<PurchaseDTO> purchaseDTOs = purchasesPage
+                .get()
                 .parallel()
-                .map(p -> {
-                    PurchaseDTO purchaseDTO = this.purchaseDtoMapper.toDto(p);
-                    purchaseDTO.setCustomer(this.userClient.getCustomerDTO(p.getCustomerId()));
-                    purchaseDTO.setPurchaseProducts(p.getPurchaseProducts()
-                            .stream()
-                            .map(pp -> PurchaseProductDTO.builder()
-                                    .id(pp.getId())
-                                    .purchase(this.purchaseDtoMapper.toDto(pp.getPurchase()))
-                                    .quantity(pp.getQuantity())
-                                    .totalPrice(pp.getTotalPrice())
-                                    .product(this.productClient.getProductDTO(pp.getProductId()))
-                                    .build())
-                            .collect(Collectors.toList()));
-                    return purchaseDTO;
-                })
+                .map(this.purchaseDtoMapper::toDto)
                 .collect(Collectors.toList());
 
         return new PageImpl<>(purchaseDTOs, pageable, purchasesPage.getTotalElements());
@@ -70,40 +68,20 @@ public class PurchaseService {
         Purchase purchaseDomain = this.purchaseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("purchase " + id + " not found"));
 
-        CompletableFuture<CustomerDTO> customerFuture = CompletableFuture.supplyAsync(() -> this.userClient.getCustomerDTO(purchaseDomain.getCustomerId()));
-
-        CompletableFuture<List<PurchaseProductDTO>> purchaseProductsFuture = CompletableFuture.supplyAsync(() ->
-                purchaseDomain.getPurchaseProducts()
-                        .stream()
-                        .map(pp -> PurchaseProductDTO.builder()
-                                .id(pp.getId())
-                                .purchase(this.purchaseDtoMapper.toDto(pp.getPurchase()))
-                                .quantity(pp.getQuantity())
-                                .totalPrice(pp.getTotalPrice())
-                                .product(this.productClient.getProductDTO(pp.getProductId()))
-                                .build())
-                        .collect(Collectors.toList()));
-
         PurchaseDTO purchaseDTO = this.purchaseDtoMapper.toDto(purchaseDomain);
 
-
-        CompletableFuture<Void> combinedFuture = customerFuture.thenCombine(purchaseProductsFuture, (customer, pps) -> {
-            purchaseDTO.setCustomer(customer);
-            purchaseDTO.setPurchaseProducts(pps);
-            return null;
-        });
-        combinedFuture.join();
         return purchaseDTO;
     }
 
+    public boolean isOwnOfTheResource(Long idResource, Long idUser){
+        Long customerId = this.purchaseRepository.findById(idResource)
+                .orElseThrow(() -> new NotFoundException("purchase " + idResource + " not found"))
+                .getCustomerId();
+
+        return this.userClient.getCustomerDTO(customerId).getId().equals(idUser);
+    }
 
 
-
-
-  /*  public Page<PurchaseDTO> search(Integer dni, String firstName, String lastName, Pageable pageable) {
-        return this.purchaseRepository.search(dni, firstName, lastName, pageable)
-                .map(this.purchaseDtoMapper::toDto);
-    }*/
 
     @Transactional
     public PurchaseDTO createOne(PurchaseAddDTO purchase) {
@@ -113,54 +91,65 @@ public class PurchaseService {
             throw new NotFoundException("customer " + purchase.getCustomerId() + " not found");
         }
 
-        Purchase purchaseToSave = this.purchaseAddDtoMapper
-                .purchaseAddDTOtoDomain(purchase);
+        Purchase purchaseToSave = this.purchaseAddDtoMapper.purchaseAddDTOtoDomain(purchase);
 
-        Purchase purchaseSaved = this.purchaseRepository.save(purchaseToSave);
+        return this.purchaseDtoMapper.toDto(this.purchaseRepository.save(purchaseToSave), customerDTO );
 
-        purchaseSaved.getPurchaseProducts().forEach(pp -> pp.setPurchase(purchaseSaved));
-
-        List<PurchaseProduct> purchaseProductList =
-                this.purchaseProductRepository.saveAll(purchaseSaved.getPurchaseProducts());
-
-        purchaseSaved.setPurchaseProducts(purchaseProductList);
-
-        PurchaseDTO purchaseDTOToReturn = this.purchaseDtoMapper.toDto(this.purchaseRepository.save(purchaseSaved));
-        purchaseDTOToReturn.setCustomer(customerDTO);
-        return purchaseDTOToReturn;
     }
 
-   /* public PurchaseDTO updateById(Long id, PurchaseAddDTO purchaseToUpdate) {
-
-        Purchase purchaseUpdated = this.purchaseAddDtoMapper
-                .purchaseAddDTOtoDomainWithPurchaseOptional(purchaseToUpdate);
+    public PurchaseDTO updateById(Long id, PurchaseAddDTO purchaseToUpdate) {
 
         Purchase purchase = this.purchaseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("purchase " + id + " not found"));
 
-        if (purchaseUpdated.getPayment() != null) {
-            purchase.setPayment(purchaseUpdated.getPayment());
-        }
-        if (purchaseUpdated.getPurchaseProducts() != null) {
-            purchase.setPurchaseProducts(purchaseUpdated.getPurchaseProducts());
-        }
-        if (purchaseUpdated.getState() != null) {
-            purchase.setState(purchaseUpdated.getState());
-        }
-
-        return this.purchaseDtoMapper.toDto
-                (this.purchaseRepository.save(purchase));
-    }*/
+        Purchase purchaseDomain = this.purchaseAddDtoMapper.purchaseAddDTOtoDomainWithPurchaseOptional(purchaseToUpdate);
 
 
- /*   public SalesStadistics getStadistics() {
-        return SalesStadistics.builder()
-                .stadisticsProducts(this.productRepository.get5mostSales())
-                .stadisticsCategories(this.categoryRepository.get5mostSales())
-                .stadisticsLast10days(this.purchaseRepository.getLast10DaysStadistics())
-                .build();
+        if (purchaseToUpdate.getPayment() != null) {
+            purchase.setPayment(purchaseToUpdate.getPayment());
+        }
+        if (purchaseToUpdate.getPurchaseProducts() != null) {
+            purchase.setPurchaseProducts(purchaseDomain.getPurchaseProducts());
+        }
+
+        PurchaseDTO purchaseToReturn = this.purchaseDtoMapper.toDto(this.purchaseRepository.save(purchase));
+        purchaseToReturn.setCustomer(this.userClient.getCustomerDTO(purchase.getCustomerId()));
+        purchaseToReturn.getPurchaseProducts()
+                .forEach(pp->pp.setProduct(this.productClient.getProductDTO(pp.getProduct().getId())));
+
+        return purchaseToReturn;
     }
-*/
+
+
+    public SalesStatistics getStadistics(Pageable productPage, Pageable categoryPage, Pageable daysPage) {
+        SalesStatistics stadistics = this.purchaseRepository.getStatistics(productPage, categoryPage, daysPage);
+        stadistics.getStadisticsProducts().forEach(sp->sp.setProduct(this.productClient.getProductDTO(sp.getProduct().getId())));
+
+        // Crear un Map para almacenar los CategoryDTO por categoryId
+        Map<Long, CategoryDTO> categoryMap = new HashMap<>();
+
+        List<CategoryDTO> topCategories = stadistics.getStadisticsProducts()
+                .stream()
+                .map(p -> {
+                    CategoryDTO categoryDTO = p.getProduct().getCategory();
+                    categoryMap.put(categoryDTO.getId(), categoryDTO);
+                    return categoryDTO.getId();
+                })
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .map(entry -> categoryMap.get(entry.getKey()))
+                .collect(Collectors.toList());
+
+
+        stadistics.setStadisticsCategories(topCategories.stream()
+                .map(StatisticsCategory::new)
+                .collect(Collectors.toList()));
+
+
+        return stadistics;
+    }
 
     public PurchaseDTO deleteById(long id) {
         Purchase purchase = this.purchaseRepository
@@ -171,23 +160,30 @@ public class PurchaseService {
                 (this.purchaseRepository.delete(purchase));
     }
 
-    /*public Object createOrderMp(OrderMpAddDTO body) {
+    public Page<PurchaseDTO> searchPurchases(Integer dni, String firstName, String lastName, Pageable pageable) {
+        List<CustomerDTO> customerDTOS = this.userClient.searchCustomers(dni, firstName, lastName);
+        List<PurchaseDTO> allPurchases = customerDTOS
+                .stream()
+                .parallel()
+                .flatMap(c -> this.purchaseRepository.findAllByCustomerId(c.getId())
+                        .stream()
+                        .map(cc->this.purchaseDtoMapper.toDto(cc, c)))
+                .collect(Collectors.toList());
+
+
+        int start = Math.min((int) pageable.getOffset(), allPurchases.size());
+        int end = Math.min((start + pageable.getPageSize()), allPurchases.size());
+        return new PageImpl<>(allPurchases.subList(start, end), pageable, allPurchases.size());
+    }
+
+    public Object createOrderMp(OrderMpAddDTO body) {
         MercadoPagoConfig.setAccessToken(this.mercadoPagoAccesToken);
 
-        List<PurchaseProduct> products = body.getProducts()
+        List<PurchaseProductDTO> products = body.getProducts()
                 .stream()
-                .map(p -> {
-                    Product product = this.productRepository
-                            .findByIdAndHasStockIsTrue(p.getProductId())
-                            .orElseThrow(() -> new NotFoundException("Product " +
-                                    p.getProductId() + " not found"));
-
-                    return PurchaseProduct.builder()
-                            .product(product)
-                            .quantity(p.getQuantity())
-                            .totalPrice(product.getPrice().multiply(BigDecimal.valueOf(p.getQuantity())))
-                            .build();
-                }).collect(Collectors.toList());
+                .map(this.purchaseAddDtoMapper::purchaseProductAddDTOtoDomain)
+                .map(this.purchaseDtoMapper::purchaseProductToPurchaseProductDTO)
+                .collect(Collectors.toList());
 
 
         PreferenceClient client = new PreferenceClient();
@@ -259,5 +255,5 @@ public class PurchaseService {
             ex.printStackTrace();
             throw new RuntimeException("mp");
         }
-    }*/
+    }
 }

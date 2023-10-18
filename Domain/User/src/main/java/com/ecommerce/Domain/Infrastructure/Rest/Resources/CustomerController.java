@@ -1,6 +1,7 @@
 package com.ecommerce.Domain.Infrastructure.Rest.Resources;
 
 import com.ecommerce.Domain.Application.Dtos.CustomerDTO;
+import com.ecommerce.Domain.Application.Exceptions.Unathorized;
 import com.ecommerce.Domain.Application.Services.AuthService;
 import com.ecommerce.Domain.Application.Services.CustomerService;
 import com.ecommerce.Domain.Infrastructure.Rest.Config.ApiResponse;
@@ -37,36 +38,57 @@ public class CustomerController {
         );
     }
 
-/*
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-*/
-@GetMapping("/{id}")
-public ResponseEntity<ApiResponse> getById(@PathVariable(value = "id") long id/*, Authentication authentication*/) {
-        // if isn't admin and doesn't have the same id throw 403
-/*
-        AuthService.checkIfAdminOrSameUser(id, authentication);
-*/
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse> getById(@PathVariable(value = "id") long id,
+        @RequestHeader(value = "isAdmin", required = false) String isAdmin,
+        @RequestHeader(value = "userId", required = false) Long userId) {
+
+        if (isAdmin != null && isAdmin.equals("false")
+            && userId!= null
+            && !this.customerService.isOwnOfTheResource(id,userId)) {
+
+            throw new Unathorized("Access Denied");
+        }
         return ApiResponse.oK(this.customerService.getById(id));
     }
 
     @GetMapping("/user/{id}")
-    public ResponseEntity<ApiResponse> getByUserId(@PathVariable(value = "id") long id) {
+    public ResponseEntity<ApiResponse> getByUserId(@PathVariable(value = "id") long id,
+    @RequestHeader(value = "isAdmin", required = false) String isAdmin,
+    @RequestHeader(value = "userId", required = false) Long userId) {
+
+        if(isAdmin != null && isAdmin.equals("false") && userId!= null && !(userId == id)){
+            throw new Unathorized("Access Denied");
+        }
         return ApiResponse.oK(this.customerService.getByUserId(id));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse> searchCustomers(
+    @RequestParam(value = "dni", required = false) Integer dni,
+    @RequestParam(value = "firstName", required = false) String firstName,
+    @RequestParam(value = "lastName", required = false) String lastName){
+
+        return ApiResponse.oK(this.customerService.searchCustomers(dni, firstName, lastName));
+    }
+
     @PostMapping()
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse> create(@Valid @RequestBody CustomerDTO body) {
         return ApiResponse.oK(this.customerService.createOne(body));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse> update(@PathVariable(value = "id") Long id,
-                                              @RequestBody CustomerDTO body,
-                                              Authentication authentication) {
-        // if isn't admin and doesn't have the same id throw 403
-        AuthService.checkIfAdminOrSameUser(id, authentication);
+    @RequestBody CustomerDTO body,
+    @RequestHeader(value = "isAdmin", required = false) String isAdmin,
+    @RequestHeader(value = "userId", required = false) Long userId) {
+
+        if (isAdmin != null && isAdmin.equals("false") &&
+        userId != null && !this.customerService.isOwnOfTheResource(id,userId)) {
+            throw new Unathorized("Access Denied");
+        }
+
         return ApiResponse.oK(this.customerService.updateById(id, body));
     }
 }

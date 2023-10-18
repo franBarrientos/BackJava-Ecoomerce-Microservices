@@ -14,7 +14,7 @@ spring:
       maxAttempts: 20
       initialInterval: 1000
 server:
-  port: 8081
+  port: 0
 eureka:
   instance:
     metadataMap:

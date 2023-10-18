@@ -1,9 +1,6 @@
 package com.ecommerce.Domain.Infrastructure.Rest.Config;
 
-import com.ecommerce.Domain.Application.Exceptions.BadRequest;
-import com.ecommerce.Domain.Application.Exceptions.NotFoundException;
-import com.ecommerce.Domain.Application.Exceptions.RelationshipAlreadyExist;
-import com.ecommerce.Domain.Application.Exceptions.Unathorized;
+import com.ecommerce.Domain.Application.Exceptions.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,16 +11,15 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class ExceptionsHandler {
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiResponse> internalError(Exception e, HttpServletRequest request) {
-		return ApiResponse.serverError(e.getMessage());
-	}@ExceptionHandler(NotFoundException.class)
+
+	@ExceptionHandler(NotFoundException.class)
 	public ResponseEntity<ApiResponse> notFound(NotFoundException e, HttpServletRequest request) {
 		return ApiResponse.notFound(e.getMessage());
 	}
 
+
 	@ExceptionHandler(BadRequest.class)
-	public ResponseEntity<ApiResponse> badRequest(NotFoundException e, HttpServletRequest request) {
+	public ResponseEntity<ApiResponse> badRequest(BadRequest e, HttpServletRequest request) {
 		return ApiResponse.badRequest(e.getMessage());
 	}
 
@@ -44,5 +40,9 @@ public class ExceptionsHandler {
 	public ResponseEntity<ApiResponse> relationshipAlreadyExist(Unathorized e, HttpServletRequest request) {
 		return ApiResponse.unathorized(e.getMessage());
 	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ApiResponse> internalError(Exception e, HttpServletRequest request) {
+		return ApiResponse.serverError(e.getMessage());}
 
 }

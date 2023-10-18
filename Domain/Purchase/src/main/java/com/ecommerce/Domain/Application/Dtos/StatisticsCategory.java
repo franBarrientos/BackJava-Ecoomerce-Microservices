@@ -3,10 +3,12 @@ package com.ecommerce.Domain.Application.Dtos;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @AllArgsConstructor
-public class StadisticsCategory {
-    private Long id;
-    private String category;
-    private Long totalSale;
+public class StatisticsCategory {
+    private CategoryDTO category;
+
+
 }

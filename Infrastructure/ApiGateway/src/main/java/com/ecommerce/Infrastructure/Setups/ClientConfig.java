@@ -1,4 +1,4 @@
-package com.ecommerce.Domain.Infrastructure.Client.Webflux.Config;
+package com.ecommerce.Infrastructure.Setups;
 
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.nio.NioChannelOption;

@@ -1,6 +1,9 @@
 package com.ecommerce.Domain.Infrastructure.DB.Spring.Repositories;
 
-import com.ecommerce.Domain.Application.Dtos.StadisticsLast10days;
+import com.ecommerce.Domain.Application.Dtos.SalesStatistics;
+import com.ecommerce.Domain.Application.Dtos.SalesStatisticsLastdays;
+import com.ecommerce.Domain.Application.Dtos.StatisticsCategory;
+import com.ecommerce.Domain.Application.Dtos.StatisticsProducts;
 import com.ecommerce.Domain.Application.Repositories.PurchaseRepository;
 import com.ecommerce.Domain.Domain.Purchase;
 import com.ecommerce.Domain.Infrastructure.DB.Spring.Entities.PurchaseEntity;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,17 +32,23 @@ public class PurchaseDboRepository implements PurchaseRepository {
                 .map(purchaseEntityMapper::toDomain);
     }
 
-   /* @Override
-    public Page<Purchase> search(Integer dni, String firstName, String lastName, Pageable pageable) {
-        return this.purchaseRepository
-                .search(dni, firstName, lastName, pageable)
-                .map(purchaseEntityMapper::toDomain);
-    }*/
+    @Override
+    public List<Purchase> findAllByCustomerId(Long id) {
+        return this.purchaseRepository.findAllByCustomerId(id)
+                .stream().map(this.purchaseEntityMapper::toDomain)
+                .collect(Collectors.toList());
+    }
 
     @Override
-    public List<StadisticsLast10days> getLast10DaysStadistics() {
-        return this.purchaseRepository.getLast10DaysStadistics();
+    public SalesStatistics getStatistics(Pageable productPage, Pageable categoryPage, Pageable daysPage) {
+        List<StatisticsProducts> stadisticsProducts = this.purchaseRepository.getStadisticsProducts(productPage);
+        List<SalesStatisticsLastdays> stadisticsDays = this.purchaseRepository.getSalesStatisticsLastdays(daysPage);
+        return SalesStatistics.builder()
+                .salesStatisticsLastdays(stadisticsDays)
+                .stadisticsProducts(stadisticsProducts)
+                .build();
     }
+
 
     @Override
     public Optional<Purchase> findById(Long id) {
@@ -53,9 +63,14 @@ public class PurchaseDboRepository implements PurchaseRepository {
 
     @Override
     public Purchase save(Purchase purchase) {
+
+        PurchaseEntity purchaseEntity = this.purchaseEntityMapper.toEntity(purchase);
+
+        purchaseEntity.getPurchaseProducts().forEach(p->p.setPurchase(purchaseEntity));
+
         return this.purchaseEntityMapper
                 .toDomain(this.purchaseRepository
-                        .save(this.purchaseEntityMapper.toEntity(purchase)));
+                        .save(purchaseEntity));
     }
 
     @Override
