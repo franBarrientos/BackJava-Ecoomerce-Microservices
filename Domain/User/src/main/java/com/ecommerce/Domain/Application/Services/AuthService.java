@@ -19,16 +19,25 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,11 +53,13 @@ public class AuthService {
     private final UserDtoMapper userDtoMapper;
     private final CustomerDtoMapper customerDtoMapper;
     private final CustomerEntityMapper customerEntityMapper;
+    private final UserDetailsService userDetailsService;
+    private final RoleHierarchy roleHierarchy;
     @Value("${GOOGLE_CLIENT_ID}")
     private String googleClientId;
 
     public AuthenticationResponse register(RegisterRequest body) {
-        var user = UserEntity.builder()
+        UserEntity user = UserEntity.builder()
                 .firstName(body.getFirstName())
                 .lastName(body.getLastName())
                 .email(body.getEmail())
@@ -56,11 +67,11 @@ public class AuthService {
                 .roles(Set.of(
                         this.roleEntityMapper
                                 .toEntity(roleRepository
-                                        .findRoleByName("USER")
-                                        .orElseThrow(() -> new NotFoundException("Role not found")))))
+                                        .findRoleByName("ROLE_USER")
+                                        .orElseThrow(() -> new RuntimeException("Role not found")))))
                 .build();
         userRepository.save(userEntityMapper.toDomain(user));
-        var jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -71,9 +82,9 @@ public class AuthService {
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(body.getEmail(),
                                 body.getPassword()));
-        var user = this.userEntityMapper.toEntity(
+        UserEntity user = this.userEntityMapper.toEntity(
                 userRepository.findByEmail(body.getEmail()).orElseThrow());
-        var userDto = UserDTO.builder()
+        UserDTO userDto = UserDTO.builder()
                 .id(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
@@ -81,7 +92,7 @@ public class AuthService {
                 .customer(this.customerDtoMapper.toDto
                         (this.customerEntityMapper.toDomain(user.getCustomer())))
                 .build();
-        var jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(user);
         return new LoginResponse(jwtToken, userDto);
 
     }
@@ -101,7 +112,7 @@ public class AuthService {
 
     public LoginResponse loginGoogle(Map body) {
         String credential = (String) body.get("credential");
-        if(credential == null) throw new Unathorized("Not Credential!");
+        if(credential == null) throw new BadRequest("Not Credential!");
 
          Map userDetails = this.googleVerify(credential);
          String userName = (String) userDetails.get("name");
@@ -147,4 +158,33 @@ public class AuthService {
             throw new RuntimeException("error Google Login");
         }
     }
+
+    public AuthDetails getRoles(String token) {
+        final String jwtToken = token.substring(7);
+        String userEmail;
+        try {
+            userEmail = this.jwtService.extractUsername(jwtToken);
+        }catch (SignatureException e){
+            throw new Unathorized("Not valid token");
+        }
+
+        if (userEmail == null ) {
+            throw new Unathorized("Not valid token");
+        }
+
+        CustomUserDetails userDetails = (CustomUserDetails) this.userDetailsService.loadUserByUsername(userEmail);
+
+        if (!jwtService.isTokenValid(jwtToken, userDetails)) {
+            throw new Unathorized("Token is Expired");
+        }
+
+
+        return AuthDetails.builder()
+                .userId(userDetails.getUser().getId())
+                .roles( roleHierarchy.getReachableGrantedAuthorities(userDetails.getAuthorities())
+                        .stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+                .build();
+    }
+
+
 }

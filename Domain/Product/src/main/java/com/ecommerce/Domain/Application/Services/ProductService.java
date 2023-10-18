@@ -23,6 +23,7 @@ public class ProductService {
     private final ProductDtoMapper productDtoMapper;
     private final UploadFileRepository uploadFileRepository;
 
+
     public Page<ProductDTO> getAll(Pageable pageable, int categoryId) {
         return this.productRepository.findAllByHasStockIsTrue(pageable, categoryId)
                 .map(this.productDtoMapper::toDto);

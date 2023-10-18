@@ -69,7 +69,7 @@ public class UserEntity implements UserDetails {
     @Column(columnDefinition = "TIMESTAMP", name = "updatedAt")
     private Date updatedAt;
 
-    @Transient
+    @OneToOne(mappedBy = "user")
     private CustomerEntity customer;
 
 

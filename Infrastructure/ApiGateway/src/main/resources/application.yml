@@ -1,0 +1,119 @@
+server:
+  port: 8085
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+spring:
+  application:
+    name: apigateway
+  cloud:
+    gateway:
+      routes:
+        - id: products-admin-api
+          uri: lb://products
+          predicates:
+            - Path=/api/v1/products/**,/api/v1/products
+            - Method=POST,DELETE,PUT
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_ADMIN
+
+
+        - id: products-api
+          uri: lb://products
+          predicates:
+            - Path=/api/v1/products/**,/api/v1/products
+
+
+        - id: users-admin-api
+          uri: lb://users
+          predicates:
+            - Path=/api/v1/users,/api/v1/users?,/api/v1/customers,/api/v1/customers?
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_ADMIN
+
+        - id: users-api
+          uri: lb://users
+          predicates:
+            - Path=/api/v1/users/**,/api/v1/customers/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_USER
+
+
+        - id: auth-api
+          uri: lb://users
+          predicates:
+            - Path=/api/v1/auth,/api/v1/auth/**
+
+
+
+        - id: purchases-mercado-pago-api
+          uri: lb://purchases
+          predicates:
+            - Path=/api/v1/purchases/create-order-mp, /api/v1/purchases/webhook,/api/v1/purchases/webhook/**
+
+
+
+
+        - id: purchases-customer-api
+          uri: lb://purchases
+          predicates:
+            - Path=/api/v1/purchases
+            - Method=POST
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_CUSTOMER
+
+
+
+        - id: purchases-admin-api
+          uri: lb://purchases
+          predicates:
+            - Path=/api/v1/purchases?,/api/v1/purchases,/api/v1/purchases/search,/api/v1/purchases/search/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_ADMIN
+
+        - id: purchases-admin-delete-api
+          uri: lb://purchases
+          predicates:
+            - Path=/api/v1/purchases/**
+            - Method=DELETE,PUT
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_ADMIN
+
+
+        - id: purchases-api
+          uri: lb://purchases
+          predicates:
+            - Path=/api/v1/purchases/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_CUSTOMER
+
+
+  spring:
+    cloud:
+      gateway:
+        discovery:
+          locator:
+            enabled: true
+            lowerCaseServiceId: true
+
+eureka:
+  client:
+    webclient:
+      enabled: true
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}

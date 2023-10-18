@@ -18,6 +18,9 @@ public class ApiResponse {
     public static ResponseEntity<ApiResponse> oK(Object body) {
         return ResponseEntity.ok(new ApiResponse(true, "success", body));
     }
+    public static ResponseEntity<ApiResponse> create(Object body) {
+        return ResponseEntity.status(201).body(new ApiResponse(true, "success", body));
+    }
 
     public static ResponseEntity<ApiResponse> notFound(Object body) {
         return ResponseEntity.status(404).body(new ApiResponse(false, body.toString(), null));
@@ -35,6 +38,9 @@ public class ApiResponse {
     }
     public static ResponseEntity<ApiResponse> unathorized(Object body) {
         return ResponseEntity.status(401).body(new ApiResponse(false, body, null));
+    }
+    public static ResponseEntity<ApiResponse> unathorizedToFilterFromGateway(Object body) {
+        return ResponseEntity.status(200).body(new ApiResponse(false, body, null));
     }
 
     // Getters and setters
