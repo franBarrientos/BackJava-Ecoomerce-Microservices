@@ -14,6 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -33,6 +36,10 @@ public class ProductService {
         return this.productDtoMapper.toDto
                 (this.productRepository.findByIdAndHasStockIsTrue(idLong)
                         .orElseThrow(() -> new NotFoundException(" Product " + idLong + " not found")));
+    }
+    public Page<ProductDTO> getAllByName(String name, Pageable pageable){
+        return this.productRepository.findAllByName(name, pageable)
+                .map(this.productDtoMapper::toDto);
     }
 
     public ProductDTO createOne(ProductAddDTO product) {
@@ -112,5 +119,12 @@ public class ProductService {
 
         return this.productDtoMapper.toDto
                 (this.productRepository.save(product));
+    }
+
+    public List<ProductDTO> getAllFavs() {
+        return this.productRepository.findAllFavs()
+                .stream()
+                .map(this.productDtoMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

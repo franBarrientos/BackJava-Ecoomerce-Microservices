@@ -13,7 +13,7 @@ spring:
         - id: products-admin-api
           uri: lb://products
           predicates:
-            - Path=/api/v1/products/**,/api/v1/products
+            - Path=/api/v1/products/**,/api/v1/products,/api/v1/categories/**,/api/v1/categories
             - Method=POST,DELETE,PUT
           filters:
             - name: AuthenticationFilter
@@ -24,8 +24,18 @@ spring:
         - id: products-api
           uri: lb://products
           predicates:
-            - Path=/api/v1/products/**,/api/v1/products
+            - Path=/api/v1/products/**,/api/v1/products,/api/v1/categories/**,/api/v1/categories
 
+
+        - id: customers-api
+          uri: lb://users
+          predicates:
+            - Path=/api/v1/customers
+            - Method=POST
+          filters:
+            - name: AuthenticationFilter
+              args:
+                rolesParameter: ROLE_USER
 
         - id: users-admin-api
           uri: lb://users

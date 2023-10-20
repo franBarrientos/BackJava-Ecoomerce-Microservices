@@ -41,6 +41,7 @@ services:
          -Xms256M
          -Xmx256M
          -Dspring.cloud.config.enabled=false
+         -DCORS_ORIGINS=http://localhost:80,http://localhost:3000,http://client-ms:80,http://client-ms:3000,*
          -DEUREKA_SERVER=http://registry-discovery:8761/eureka/
     depends_on:
       - registry-discovery
@@ -102,6 +103,7 @@ services:
       - registry-discovery
       - configuration
 
+
  ##########################################################################
  #purchases service
  ##########################################################################
@@ -119,6 +121,20 @@ services:
     depends_on:
       - registry-discovery
       - configuration
+
+ ##########################################################################
+ #React client service
+ ##########################################################################
+  client-ms:
+    container_name: bd-client
+    entrypoint: /bin/sh
+    image: node:alpine
+    ports:
+      - 3000:3000
+    working_dir: /srv/app
+    volumes:
+      - ./Client/:/srv/app
+    tty: true
 
  ##########################################################################
  #database service

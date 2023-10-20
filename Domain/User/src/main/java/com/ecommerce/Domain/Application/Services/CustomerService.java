@@ -5,6 +5,7 @@ import com.ecommerce.Domain.Application.Exceptions.NotFoundException;
 import com.ecommerce.Domain.Application.Exceptions.RelationshipAlreadyExist;
 import com.ecommerce.Domain.Application.Mappers.CustomerDtoMapper;
 import com.ecommerce.Domain.Application.Repositories.CustomerRepository;
+import com.ecommerce.Domain.Application.Repositories.RoleRepository;
 import com.ecommerce.Domain.Application.Repositories.UserRepository;
 import com.ecommerce.Domain.Domain.Customer;
 import com.ecommerce.Domain.Domain.User;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,7 +24,7 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final CustomerDtoMapper customerDtoMapper;
-
+    private final RoleRepository roleRepository;
 
 
 
@@ -45,6 +47,11 @@ public class CustomerService {
         if (user.getCustomer() != null) {
             throw new RelationshipAlreadyExist("can not create a relationship one to one already exist!.");
         }
+
+        user.setRoles(Set.of(this.roleRepository.findRoleByName("ROLE_CUSTOMER")
+                .orElseThrow(() -> new NotFoundException("role " + "ROLE_CUSTOMER" + " not found"))));
+
+        this.userRepository.save(user);
 
         return this.customerDtoMapper.toDto
                 (this.customerRepository.save(this.customerDtoMapper.toDomain(customer)));

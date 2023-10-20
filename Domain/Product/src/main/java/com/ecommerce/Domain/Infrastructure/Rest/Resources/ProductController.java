@@ -39,6 +39,24 @@ public class ProductController {
     public ResponseEntity<ApiResponse> getById(@PathVariable(value = "id") long id) {
         return ApiResponse.oK(this.productService.getById(id));
     }
+ @GetMapping("/byName")
+    public ResponseEntity<ApiResponse> getAllByName(
+         @RequestParam(defaultValue = "0") int page,
+         @RequestParam(defaultValue = "15") int limit,
+         @RequestParam(defaultValue = "") String name) {
+        Page<ProductDTO> products = this.productService.getAllByName(name, PageRequest.of(page, limit));
+        return ApiResponse.oK(
+                ProductsPaginatedResponse.builder()
+                        .products(products.getContent())
+                        .totalPages(products.getTotalPages())
+                        .totalItems(products.getNumberOfElements())
+                        .build()
+                );
+    }
+    @GetMapping("/favs")
+    public ResponseEntity<ApiResponse> getAllFavs() {
+        return ApiResponse.oK(this.productService.getAllFavs());
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse> createOne(@ModelAttribute ProductAddDTO productAddDTO) {

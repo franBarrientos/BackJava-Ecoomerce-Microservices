@@ -10,7 +10,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,5 +44,21 @@ public class ProductDboRepository implements ProductRepository {
         return this.productEntityMapper.toDomain(
                 this.productRepository.save(this.productEntityMapper.toEntity(product))
         );
+    }
+
+    @Override
+    public Page<Product> findAllByName(String name, Pageable pageable) {
+        return this.productRepository
+                .findAllByName(name, pageable)
+                .map(this.productEntityMapper::toDomain);
+    }
+
+    @Override
+    public List<Product> findAllFavs() {
+        return this.productRepository
+                .findAllByFavIsTrueAndHasStockIsTrue()
+                .stream()
+                .map(this.productEntityMapper::toDomain)
+                .collect(Collectors.toList());
     }
 }

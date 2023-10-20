@@ -58,7 +58,7 @@ public class AuthService {
     @Value("${GOOGLE_CLIENT_ID}")
     private String googleClientId;
 
-    public AuthenticationResponse register(RegisterRequest body) {
+    public LoginResponse register(RegisterRequest body) {
         UserEntity user = UserEntity.builder()
                 .firstName(body.getFirstName())
                 .lastName(body.getLastName())
@@ -70,11 +70,9 @@ public class AuthService {
                                         .findRoleByName("ROLE_USER")
                                         .orElseThrow(() -> new RuntimeException("Role not found")))))
                 .build();
-        userRepository.save(userEntityMapper.toDomain(user));
+        UserDTO userDTO = this.userDtoMapper.toDto(userRepository.save(userEntityMapper.toDomain(user)));
         String jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
+        return new LoginResponse(jwtToken, userDTO);
     }
 
     public LoginResponse login(LoginRequest body) {
@@ -186,5 +184,22 @@ public class AuthService {
                 .build();
     }
 
+
+    public LoginResponse refreshToken(String token) {
+        final String jwtToken = token.substring(7);
+        try {
+            Date expiration = this.jwtService.extractExpiration(jwtToken);
+            if (expiration.before(new Date())) {
+                throw new Unathorized("Token is Expired");
+            }
+            String userEmail = this.jwtService.extractUsername(jwtToken);
+            CustomUserDetails userDetails = (CustomUserDetails) this.userDetailsService.loadUserByUsername(userEmail);
+            String jwtTokenNew = jwtService.generateToken(userDetails);
+            return new LoginResponse(jwtTokenNew, null);
+        }catch (SignatureException e){
+            throw new Unathorized("Not valid token");
+        }
+
+    }
 
 }

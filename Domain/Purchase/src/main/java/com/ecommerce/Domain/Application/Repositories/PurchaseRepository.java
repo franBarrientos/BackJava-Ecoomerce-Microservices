@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.BaseStream;
 
 public interface PurchaseRepository {
     Page<Purchase> findAll(Pageable pageable);
@@ -21,4 +22,5 @@ public interface PurchaseRepository {
     Purchase save(Purchase purchase);
 
     Purchase delete(Purchase purchase);
+
 }

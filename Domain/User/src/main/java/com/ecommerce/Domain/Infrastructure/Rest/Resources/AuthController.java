@@ -26,6 +26,12 @@ public class AuthController {
         return ApiResponse.oK(authService.login(body));
 
     }
+    @PostMapping("/refreshToken")
+    public ResponseEntity<ApiResponse> refreshToken(
+    @RequestHeader("Authorization") String token) {
+        return ApiResponse.oK(authService.refreshToken(token));
+
+    }
 
     @PostMapping("/google")
     public ResponseEntity<ApiResponse> loginGoogle(@RequestBody Map body) {

@@ -16,6 +16,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/purchases")
 @RequiredArgsConstructor
@@ -50,6 +52,19 @@ public class PurchaseController {
             throw new Unathorized("Access Denied");
         }
         return ApiResponse.oK(this.purchaseService.getById(id));
+    }
+
+    @GetMapping("/customer/{id}")
+    public ResponseEntity<ApiResponse> getByCustomerId(@PathVariable(value = "id") long id ,
+    @RequestHeader(value = "isAdmin", required = false) String isAdmin,
+    @RequestHeader(value = "userId", required = false) Long userId) {
+
+        if( isAdmin != null && isAdmin.equals("false") && userId != null &&
+            !this.purchaseService.isOwnOfTheResourceCustomer(id, userId)){
+            throw new Unathorized("Access Denied");
+        }
+        List<PurchaseDTO> purchases = this.purchaseService.getByCustomerId(id);
+        return ApiResponse.oK(this.purchaseService.getByCustomerId(id));
     }
 
     @GetMapping("/search")

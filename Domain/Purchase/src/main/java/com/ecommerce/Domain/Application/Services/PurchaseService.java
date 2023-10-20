@@ -73,12 +73,22 @@ public class PurchaseService {
         return purchaseDTO;
     }
 
+    public List<PurchaseDTO> getByCustomerId(Long id) {
+        return this.purchaseRepository.findAllByCustomerId(id)
+                .stream()
+                .map(this.purchaseDtoMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     public boolean isOwnOfTheResource(Long idResource, Long idUser){
         Long customerId = this.purchaseRepository.findById(idResource)
                 .orElseThrow(() -> new NotFoundException("purchase " + idResource + " not found"))
                 .getCustomerId();
 
-        return this.userClient.getCustomerDTO(customerId).getId().equals(idUser);
+        return this.userClient.getCustomerDTO(customerId).getUser().getId().equals(idUser);
+    }
+    public boolean isOwnOfTheResourceCustomer(Long idResource, Long idUser){
+        return this.userClient.getCustomerDTO(idResource).getUser().getId().equals(idUser);
     }
 
 
@@ -256,4 +266,6 @@ public class PurchaseService {
             throw new RuntimeException("mp");
         }
     }
+
+
 }
